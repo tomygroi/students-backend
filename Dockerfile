@@ -1,25 +1,24 @@
-# ETAPA 1: Compilar la aplicación con Maven
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+# ETAPA 1: Compilar la aplicación con Maven usando JDK 21
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copiar pom.xml y descargar dependencias (optimiza la caché de Docker)
+# Copiar pom.xml y descargar dependencias
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Copiar el código fuente de Java y empaquetar sin ejecutar tests
+# Copiar el código fuente y empaquetar sin ejecutar tests
 COPY src ./src
 RUN mvn package -DskipTests
 
-# ETAPA 2: Imagen liviana de ejecución con OpenJDK 17
-FROM eclipse-temurin:17-jre-alpine
+# ETAPA 2: Imagen de ejecución con OpenJDK 21 (JRE Alpine)
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Copiar el ejecutable generado en la etapa de build
 COPY --from=build /app/target/*.jar app.jar
 
-# Render asigna automáticamente el puerto a través de la variable de entorno PORT
+# Render asigna el puerto mediante la variable de entorno PORT
 ENV PORT=8080
 EXPOSE 8080
 
-# Iniciar la aplicación pasando el puerto que asigna el entorno
 ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]
